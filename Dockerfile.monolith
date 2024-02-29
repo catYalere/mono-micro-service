@@ -1,0 +1,26 @@
+FROM golang:1.21 as build
+
+LABEL MAINTAINER="Cat <cat@catwashere.com>"
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get -y install build-essential pkgconf \
+    && wget -O /wait https://github.com/ufoscout/docker-compose-wait/releases/download/2.12.1/wait \
+    && chmod +x /wait
+
+WORKDIR /app
+COPY go.mod go.sum ./
+COPY cmd/monolith /app/cmd/monolith
+COPY api /app/api
+COPY errdefs /app/errdefs
+COPY internal /app/internal
+COPY pkg /app/pkg
+COPY Makefile /app/Makefile
+
+RUN make monolith
+
+FROM gcr.io/distroless/base-debian12:latest
+LABEL MAINTAINER="Cat <cat@catwashere.com>"
+COPY --from=build /wait /wait
+COPY --from=build /app/dist/* /
+ENV WAIT_COMMAND="/monolith"
+ENTRYPOINT ["/wait"]

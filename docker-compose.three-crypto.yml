@@ -1,0 +1,51 @@
+version: '3.7'
+services:
+  three-crypto-mongo:
+    image: mongo:7
+    ports:
+      - 27017:27017
+
+  three-crypto-user:
+    build:
+      context: .
+      dockerfile: Dockerfile.microservice.crypto
+      args:
+        TYPE: three_microservices_crypto
+        SERVICE: user
+    ports:
+      - 8082:8082
+    environment:
+      SERVICE_PORT: 8082
+      DB_HOSTNAME: three-crypto-mongo
+      WAIT_HOSTS: three-crypto-mongo:27017
+
+  three-crypto-session:
+    build:
+      context: .
+      dockerfile: Dockerfile.microservice.crypto
+      args:
+        TYPE: three_microservices_crypto
+        SERVICE: session
+    ports:
+      - 8081:8081
+    environment:
+      SERVICE_PORT: 8081
+      USER_BASE_URL: http://three-crypto-user:8082
+      DB_HOSTNAME: three-crypto-mongo
+      WAIT_HOSTS: three-crypto-mongo:27017, three-crypto-user:8082
+
+  three-crypto-auth:
+    build:
+      context: .
+      dockerfile: Dockerfile.microservice.crypto
+      args:
+        TYPE: three_microservices_crypto
+        SERVICE: auth
+    ports:
+      - 8080:8080
+    environment:
+      SERVICE_PORT: 8080
+      SESSION_BASE_URL: http://three-crypto-session:8081
+      USER_BASE_URL: http://three-crypto-user:8082
+      DB_HOSTNAME: three-crypto-mongo
+      WAIT_HOSTS: three-crypto-mongo:27017, three-crypto-session:8081, three-crypto-user:8082

@@ -1,0 +1,36 @@
+version: '3.7'
+services:
+  two-mongo:
+    image: mongo:7
+    ports:
+      - 27017:27017
+
+  two-session:
+    build:
+      context: .
+      dockerfile: Dockerfile.microservice
+      args:
+        TYPE: two_microservices
+        SERVICE: session
+    ports:
+      - 8081:8081
+    environment:
+      SERVICE_PORT: 8081
+      USER_BASE_URL: http://two-user_auth:8080
+      DB_HOSTNAME: two-mongo
+      WAIT_HOSTS: two-mongo:27017
+
+  two-user_auth:
+    build:
+      context: .
+      dockerfile: Dockerfile.microservice
+      args:
+        TYPE: two_microservices
+        SERVICE: user_auth
+    ports:
+      - 8080:8080
+    environment:
+      SERVICE_PORT: 8080
+      SESSION_BASE_URL: http://two-session:8081
+      DB_HOSTNAME: two-mongo
+      WAIT_HOSTS: two-mongo:27017, two-session:8081
